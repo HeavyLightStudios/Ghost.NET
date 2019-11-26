@@ -25,7 +25,7 @@ namespace HLStudios.GhostAPI.APIs
             _httpClient.BaseAddress = new Uri(url);
         }
 
-        public async Task<(PostList response, ErrorList error)> BrowsePostsAsync(PostOptions options = null)
+        public async Task<Response<PostList>> BrowsePostsAsync(PostOptions options = null)
         {
             var requestUri = new StringBuilder();
             
@@ -43,16 +43,18 @@ namespace HLStudios.GhostAPI.APIs
                     ? $"&fields={options.Fields.GetDescriptions()}"
                     : string.Empty);
                 
-                requestUri.Append(options.Page != string.Empty ? $"&page={options.Page}" : string.Empty);
+                requestUri.Append(options.Page != string.Empty 
+                    ? $"&page={options.Page}" 
+                    : string.Empty);
                 requestUri.Append(options.Limit != string.Empty ? $"&limit={options.Limit}" : string.Empty);
                 requestUri.Append(options.Filter != string.Empty ? $"&filter={options.Filter}" : string.Empty);
                 requestUri.Append(options.Order != string.Empty ? $"&order={options.Order}" : string.Empty);
             }
 
-             return await GetRequestAsync<PostList>(requestUri);
+            return await GetRequestAsync<PostList>(requestUri);
         }
 
-        public async Task<(PostList response, ErrorList error)> ReadPostByIdAsync(string id, PostOptions options = null)
+        public async Task<Response<PostList>> ReadPostByIdAsync(string id, PostOptions options = null)
         {
             var requestUri = new StringBuilder();
             
@@ -75,7 +77,7 @@ namespace HLStudios.GhostAPI.APIs
             return await GetRequestAsync<PostList>(requestUri);
         }
         
-        public async Task<(PostList response, ErrorList error)> ReadPostBySlugAsync(string slug, PostOptions options = null)
+        public async Task<Response<PostList>> ReadPostBySlugAsync(string slug, PostOptions options = null)
         {
             var requestUri = new StringBuilder();
             
@@ -98,7 +100,7 @@ namespace HLStudios.GhostAPI.APIs
             return await GetRequestAsync<PostList>(requestUri);
         }
         
-        public async Task<(PageList response, ErrorList error)> BrowsePageAsync(PageOptions options = null)
+        public async Task<Response<PageList>> BrowsePageAsync(PageOptions options = null)
         {
             var requestUri = new StringBuilder();
             
@@ -126,7 +128,7 @@ namespace HLStudios.GhostAPI.APIs
             return await GetRequestAsync<PageList>(requestUri);
         }
         
-        public async Task<(PageList response, ErrorList error)> ReadPageByIdAsync(string id, PageOptions options = null)
+        public async Task<Response<PageList>> ReadPageByIdAsync(string id, PageOptions options = null)
         {
             var requestUri = new StringBuilder();
             
@@ -149,7 +151,7 @@ namespace HLStudios.GhostAPI.APIs
             return await GetRequestAsync<PageList>(requestUri);
         }
         
-        public async Task<(PageList response, ErrorList error)> ReadPageBySlugAsync(string slug, PageOptions options = null)
+        public async Task<Response<PageList>> ReadPageBySlugAsync(string slug, PageOptions options = null)
         {
             var requestUri = new StringBuilder();
             
@@ -172,7 +174,7 @@ namespace HLStudios.GhostAPI.APIs
             return await GetRequestAsync<PageList>(requestUri);
         }
         
-        public async Task<(TagList response, ErrorList error)> BrowseTagsAsync(TagOptions options = null)
+        public async Task<Response<TagList>> BrowseTagsAsync(TagOptions options = null)
         {
             var requestUri = new StringBuilder();
             
@@ -196,7 +198,7 @@ namespace HLStudios.GhostAPI.APIs
             return await GetRequestAsync<TagList>(requestUri);
         }
         
-        public async Task<(TagList response, ErrorList error)> ReadTagByIdAsync(string id, TagOptions options = null)
+        public async Task<Response<TagList>> ReadTagByIdAsync(string id, TagOptions options = null)
         {
             var requestUri = new StringBuilder();
             
@@ -216,7 +218,7 @@ namespace HLStudios.GhostAPI.APIs
 
         }
         
-        public async Task<(TagList response, ErrorList error)> ReadTagBySlugAsync(string slug, TagOptions options = null)
+        public async Task<Response<TagList>> ReadTagBySlugAsync(string slug, TagOptions options = null)
         {
             var requestUri = new StringBuilder();
             
@@ -235,7 +237,7 @@ namespace HLStudios.GhostAPI.APIs
             return await GetRequestAsync<TagList>(requestUri);
         }
         
-        public async Task<(AuthorList response, ErrorList error)> BrowseAuthorsAsync(AuthorOptions options = null)
+        public async Task<Response<AuthorList>> BrowseAuthorsAsync(AuthorOptions options = null)
         {
             var requestUri = new StringBuilder();
             
@@ -259,7 +261,7 @@ namespace HLStudios.GhostAPI.APIs
             return await GetRequestAsync<AuthorList>(requestUri);
         }
         
-        public async Task<(AuthorList response, ErrorList error)> ReadAuthorByIdAsync(string id, AuthorOptions options = null)
+        public async Task<Response<AuthorList>> ReadAuthorByIdAsync(string id, AuthorOptions options = null)
         {
             var requestUri = new StringBuilder();
             
@@ -278,7 +280,7 @@ namespace HLStudios.GhostAPI.APIs
             return await GetRequestAsync<AuthorList>(requestUri);
         }
         
-        public async Task<(AuthorList response, ErrorList error)> ReadAuthorBySlugAsync(string slug, AuthorOptions options = null)
+        public async Task<Response<AuthorList>> ReadAuthorBySlugAsync(string slug, AuthorOptions options = null)
         {
             var requestUri = new StringBuilder();
             
@@ -297,7 +299,7 @@ namespace HLStudios.GhostAPI.APIs
             return await GetRequestAsync<AuthorList>(requestUri);
         }
 
-        public async Task<(SettingsRoot response, ErrorList error)> ReadSettingsAsync()
+        public async Task<Response<SettingsRoot>> ReadSettingsAsync()
         {
             var requestUri = new StringBuilder();
             
@@ -306,7 +308,7 @@ namespace HLStudios.GhostAPI.APIs
             return await GetRequestAsync<SettingsRoot>(requestUri);
         }
 
-        private async Task<(T response, ErrorList error)> GetRequestAsync<T>(StringBuilder requestUri)
+        private async Task<Response<T>> GetRequestAsync<T>(StringBuilder requestUri)
         {
             try
             {
@@ -319,11 +321,19 @@ namespace HLStudios.GhostAPI.APIs
                     response.StatusCode == HttpStatusCode.NotFound ||
                     response.StatusCode == HttpStatusCode.InternalServerError)
                 {
-                    Console.WriteLine(await response.Content.ReadAsStringAsync());
-                    return (default, JsonSerializer.Deserialize<ErrorList>(await response.Content.ReadAsStringAsync()));
+
+                    return new Response<T>
+                    {
+                        Content = default,
+                        Error = JsonSerializer.Deserialize<ErrorList>(await response.Content.ReadAsStringAsync())
+                    };
                 }
                 
-                return (JsonSerializer.Deserialize<T>(await response.Content.ReadAsStringAsync()), null);
+                return new Response<T>
+                {
+                    Content = JsonSerializer.Deserialize<T>(await response.Content.ReadAsStringAsync()),
+                    Error = null
+                };
             }
             catch (HttpRequestException ex)
             {
